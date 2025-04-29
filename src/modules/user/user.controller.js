@@ -41,15 +41,21 @@ const verifyEmail = catchError(async (req, res) => {
 
   const { email } = jwt.verify(token, process.env.JWT_EMAIL_KEY);
 
-  await userModel.findOneAndUpdate(
+  const user = await userModel.findOneAndUpdate(
     {
       email,
+      emailVerificationToken: token,
     },
     {
       isEmailVerified: true,
       emailVerificationToken: "",
     }
   );
+  if (!user)
+    return res.status(400).json({
+      message: "Invalid/expired token or already verified",
+    });
+
   res.json({ messaage: "Success" });
 });
 
