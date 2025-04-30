@@ -49,3 +49,34 @@ export const sendEmail = async (user) => {
 //isEmailVerified: {
 //type: Boolean,
 //default: false,},
+
+export const sendNumber = async (user, resetCode) => {
+  try {
+    const { email, name } = user;
+
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.EMAIL,
+        pass: process.env.EMAIL_PASSWORD,
+      },
+    });
+
+    await transporter.sendMail({
+      from: `"" ${process.env.EMAIL}`,
+      to: user.email,
+      subject: "Confirm email",
+      html: `
+      <h2>Password Reset Request</h2>
+      <p>Your verification code is:</p>
+      <h1>${resetCode}</h1>
+      <p>This code expires in 15 minutes</p>
+    `,
+    });
+
+    console.log("Message sent:", user.email);
+  } catch (error) {
+    console.error("Email sending failed:", error);
+    throw new Error("Failed to send verification email");
+  }
+};

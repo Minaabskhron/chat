@@ -1,9 +1,9 @@
 import userModel from "./user.model.js";
 import jwt from "jsonwebtoken";
 import { AppError, catchError } from "../../utils/handleErrors.js";
-import { sendEmail } from "../../servcies/sendEmail.js";
+import { sendEmail, sendNumber } from "../../servcies/sendEmail.js";
 import bcrypt from "bcrypt";
-import { Types } from "mongoose";
+import { startSession, Types } from "mongoose";
 //import qrcode from "qrcode";
 
 // const addUser = catchError(async (req, res) => {
@@ -92,94 +92,167 @@ const signIn = catchError(async (req, res) => {
 });
 
 const sendFriendRequest = catchError(async (req, res) => {
-  const senderId = req.user._id;
-  const receiverId = new Types.ObjectId(String(req.body.id));
+  const session = await startSession();
 
-  if (senderId.equals(receiverId))
-    throw new AppError("Cannot send request to yourself", 400);
+  try {
+    session.startTransaction();
 
-  const [sender, receiver] = await Promise.all([
-    userModel.findById(senderId),
-    userModel.findById(receiverId),
-  ]);
+    const senderId = req.user._id;
+    const receiverId = new Types.ObjectId(String(req.body.id));
 
-  if (!receiver) throw new AppError("User not found", 404);
+    if (senderId.equals(receiverId))
+      throw new AppError("Cannot send request to yourself", 400);
 
-  if (sender.outgoingRequests.includes(receiverId))
-    throw new AppError("Request already sent", 400);
+    const [sender, receiver] = await Promise.all([
+      userModel.findById(senderId),
+      userModel.findById(receiverId),
+    ]);
 
-  if (sender.friends.includes(receiverId))
-    throw new AppError("Already friends", 400);
+    if (!receiver) throw new AppError("User not found", 404);
 
-  await userModel.findByIdAndUpdate(senderId, {
-    $addToSet: { outgoingRequests: receiverId },
-  });
+    if (sender.outgoingRequests.includes(receiverId))
+      throw new AppError("Request already sent", 400);
 
-  await userModel.findByIdAndUpdate(receiverId, {
-    $addToSet: { incomingRequests: senderId },
-  });
+    if (sender.friends.includes(receiverId))
+      throw new AppError("Already friends", 400);
 
-  res
-    .status(200)
-    .json({ status: "success", message: "Friend request sent successfully" });
+    await userModel.findByIdAndUpdate(senderId, {
+      $addToSet: { outgoingRequests: receiverId },
+    });
+
+    await userModel.findByIdAndUpdate(receiverId, {
+      $addToSet: { incomingRequests: senderId },
+    });
+    await session.commitTransaction();
+    res
+      .status(200)
+      .json({ status: "success", message: "Friend request sent successfully" });
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
 });
 
 const confirmRequest = catchError(async (req, res) => {
-  const receiverId = req.user._id;
-  const senderId = req.body.id;
+  const session = await startSession();
 
-  await userModel.findByIdAndUpdate(senderId, {
-    $pull: { outgoingRequests: receiverId },
-    $addToSet: { friends: receiverId },
-  });
+  try {
+    session.startTransaction();
+    const receiverId = req.user._id;
+    const senderId = req.body.id;
 
-  await userModel.findByIdAndUpdate(receiverId, {
-    $pull: { incomingRequests: senderId },
-    $addToSet: { friends: senderId },
-  });
+    await userModel.findByIdAndUpdate(senderId, {
+      $pull: { outgoingRequests: receiverId },
+      $addToSet: { friends: receiverId },
+    });
 
-  res
-    .status(200)
-    .json({ status: "success", message: "Friend request accepted" });
+    await userModel.findByIdAndUpdate(receiverId, {
+      $pull: { incomingRequests: senderId },
+      $addToSet: { friends: senderId },
+    });
+    await session.commitTransaction();
+
+    res
+      .status(200)
+      .json({ status: "success", message: "Friend request accepted" });
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    session.endSession();
+  }
 });
 
 const cancelRequest = catchError(async (req, res) => {
-  const loggedUserId = req.user._id;
-  const theOtherUserId = req.body.id;
+  const session = await startSession();
 
-  if (!theOtherUserId) throw new AppError("Invalid user ID", 400);
+  try {
+    session.startTransaction();
 
-  const [loggedUser, theOtherUser] = await Promise.all([
-    userModel.findById(loggedUserId),
-    userModel.findById(theOtherUserId),
-  ]);
+    const loggedUserId = req.user._id;
+    const theOtherUserId = req.body.id;
 
-  if (!loggedUser || !theOtherUser) throw new AppError("User not found", 400);
+    if (!theOtherUserId) throw new AppError("Invalid user ID", 400);
 
-  const outgoing = loggedUser.outgoingRequests.some((id) =>
-    id.equals(theOtherUserId)
+    const [loggedUser, theOtherUser] = await Promise.all([
+      userModel.findById(loggedUserId),
+      userModel.findById(theOtherUserId),
+    ]);
+
+    if (!loggedUser || !theOtherUser) throw new AppError("User not found", 400);
+
+    const outgoing = loggedUser.outgoingRequests.some((id) =>
+      id.equals(theOtherUserId)
+    );
+
+    const ingoing = loggedUser.incomingRequests.some((id) =>
+      id.equals(theOtherUserId)
+    );
+
+    if (!outgoing && !ingoing) throw new AppError("No existing request", 400);
+
+    await userModel.findByIdAndUpdate(loggedUserId, {
+      $pull: {
+        outgoingRequests: theOtherUserId,
+        incomingRequests: theOtherUserId,
+      },
+    });
+
+    await userModel.findByIdAndUpdate(theOtherUserId, {
+      $pull: { incomingRequests: loggedUserId, outgoingRequests: loggedUserId },
+    });
+
+    await session.commitTransaction();
+
+    res
+      .status(200)
+      .json({ status: "success", message: "Friend request cancelled" });
+  } catch (error) {
+    await session.abortTransaction();
+    throw error;
+  } finally {
+    await session.endSession();
+  }
+});
+
+const updateUser = catchError(async (req, res) => {
+  const { name, age, password, email, gender } = req.body;
+  if (password) throw new AppError("can't update password", 400);
+
+  const updated = { name, age, email, gender };
+
+  const { _id } = req.user;
+  const newUser = await userModel
+    .findByIdAndUpdate(_id, updated, {
+      new: true, //returns the new data after update
+      runValidators: true, //runs the schema validation
+    })
+    .select("-password");
+  if (email) {
+    await sendEmail(newUser);
+  }
+  res.json({ message: "Success", newUser });
+});
+
+const forgotPassword = catchError(async (req, res) => {
+  const { email } = req.body;
+  const resetCode = Math.floor(100000 + Math.random() * 900000).toString();
+  const user = await userModel.findOneAndUpdate(
+    { email },
+    {
+      $set: {
+        hashedNumber: bcrypt.hashSync(resetCode, +process.env.SALT),
+        passwordResetExpires: Date.now() + 15 * 60 * 1000,
+      },
+    }
   );
 
-  const ingoing = loggedUser.incomingRequests.some((id) =>
-    id.equals(theOtherUserId)
-  );
+  if (!user) throw new AppError("User not found", 404);
 
-  if (!outgoing && !ingoing) throw new AppError("No existing request", 400);
-
-  await userModel.findByIdAndUpdate(loggedUserId, {
-    $pull: {
-      outgoingRequests: theOtherUserId,
-      incomingRequests: theOtherUserId,
-    },
-  });
-
-  await userModel.findByIdAndUpdate(theOtherUserId, {
-    $pull: { incomingRequests: loggedUserId, outgoingRequests: loggedUserId },
-  });
-
-  res
-    .status(200)
-    .json({ status: "success", message: "Friend request cancelled" });
+  await sendNumber(user, resetCode);
+  res.json({ message: "Reset code sent to email" });
 });
 
 // const shareProfile = catchError(async (req, res) => {
@@ -187,22 +260,6 @@ const cancelRequest = catchError(async (req, res) => {
 //     res.send(`<img src="qr"/>`);
 //   });
 // });
-
-const updateUser = catchError(async (req, res) => {
-  const { name, age, email, password, gender } = req.body;
-
-  const updated = { name, age, email, password, gender };
-
-  const { _id } = req.user;
-  const newUser = await userModel.findByIdAndUpdate(_id, updated, {
-    new: true, //returns the new data after update
-    runValidators: true, //runs the schema validation
-  });
-  if (email) {
-    await sendEmail(newUser);
-  }
-  res.json({ message: "Success", newUser });
-});
 
 // const deleteUser = catchError(async (req, res) => {
 //   const { id } = req.params;
@@ -253,4 +310,5 @@ export {
   confirmRequest,
   cancelRequest,
   updateUser,
+  forgotPassword,
 };

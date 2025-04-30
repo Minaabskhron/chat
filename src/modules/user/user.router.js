@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   cancelRequest,
   confirmRequest,
+  forgotPassword,
   sendFriendRequest,
   signIn,
   signUp,
@@ -20,4 +21,5 @@ userRouter.post("/sendfriendrequest", auth, sendFriendRequest);
 userRouter.patch("/confirmrequest", auth, confirmRequest);
 userRouter.patch("/cancelrequest", auth, cancelRequest);
 userRouter.patch("/update", auth, updateUser);
+userRouter.post("/forgetPassword", forgotPassword);
 export default userRouter;

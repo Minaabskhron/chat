@@ -87,12 +87,20 @@ const schema = new Schema(
         ref: "User",
       },
     ],
+    blockedUsers: [
+      {
+        type: Types.ObjectId,
+        ref: "User",
+      },
+    ],
     role: {
       type: String,
       enum: ["ADMIN", "USER"],
       default: "USER",
     },
+    passwordResetCode: Number,
     passwordChangedAt: Date,
+    passwordResetExpires: Date,
   },
 
   { timestamps: true }
