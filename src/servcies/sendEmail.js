@@ -28,6 +28,7 @@ export const sendEmail = async (user) => {
     });
 
     user.emailVerificationToken = token;
+    user.isEmailVerified = false;
     // user.emailVerificationExpires = Date.now() + 900000;
     await user.save();
 

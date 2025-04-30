@@ -188,16 +188,22 @@ const cancelRequest = catchError(async (req, res) => {
 //   });
 // });
 
-// const updateUser = catchError(async (req, res) => {
-//   const { name, age, email, password, gender } = req.body;
-//   const { id } = req.params;
-//   const data = await userModel.findByIdAndUpdate(
-//     id,
-//     { name, age, email, password, gender },
-//     { new: true }
-//   );
-//   res.json({ messaage: "Success", data });
-// });
+const updateUser = catchError(async (req, res) => {
+  const { name, age, email, password, gender } = req.body;
+
+  const updated = { name, age, email, password, gender };
+
+  const { _id } = req.user;
+  const newUser = await userModel.findByIdAndUpdate(_id, updated, {
+    new: true, //returns the new data after update
+    runValidators: true, //runs the schema validation
+  });
+  if (email) {
+    await sendEmail(newUser);
+  }
+  res.json({ message: "Success", newUser });
+});
+
 // const deleteUser = catchError(async (req, res) => {
 //   const { id } = req.params;
 //   await userModel.findByIdAndDelete(id);
@@ -246,4 +252,5 @@ export {
   sendFriendRequest,
   confirmRequest,
   cancelRequest,
+  updateUser,
 };
