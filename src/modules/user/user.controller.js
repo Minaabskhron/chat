@@ -1,8 +1,8 @@
 import userModel from "./user.model.js";
 import jwt from "jsonwebtoken";
-import { catchError } from "../../utils/handleErrors.js";
+import { AppError, catchError } from "../../utils/handleErrors.js";
 import { sendEmail } from "../../servcies/sendEmail.js";
-//import bcrypt from "bcrypt";
+import bcrypt from "bcrypt";
 //import qrcode from "qrcode";
 
 // const addUser = catchError(async (req, res) => {
@@ -28,11 +28,11 @@ const signUp = catchError(async (req, res) => {
     name,
   });
   const token = `Bearer ${jwt.sign(
-    { ...req.body },
+    { email, username, name },
     process.env.JWT_KEY
     // {expiresIn: "1h",}
   )}`;
-  await sendEmail(user);
+  if (user) await sendEmail(user);
   res.status(201).json({ message: "Success", token });
 });
 
@@ -59,16 +59,33 @@ const verifyEmail = catchError(async (req, res) => {
   res.json({ messaage: "Success" });
 });
 
-// const SignIn = catchError(async (req, res, next) => {
-//   const { email, password } = req.body;
-//   const user = await userModel.findOne({ email });
-//   if (!user || !bcrypt.compareSync(password, user.password))
-//     throw new AppError("Invalid credentials", 400);
+const signIn = catchError(async (req, res) => {
+  const { email, username, password } = req.body;
 
-//   const { name, role, _id } = user;
-//   const token = jwt.sign({ name, email, role, _id }, process.env.SECRET_KEY);
-//   res.status(200).json({ message: "signed in successfully", token });
-// });
+  if (!password || (!email && !username)) {
+    throw new AppError("Please provide email/username and password", 400);
+  }
+  const user = await userModel
+    .findOne({ $or: [{ email }, { username }] })
+    .select("+isEmailVerified +isActive");
+  if (!user || !bcrypt.compareSync(password, user.password)) {
+    throw new AppError("Invalid credentials", 400);
+  }
+
+  if (!user.isEmailVerified) {
+    throw new AppError("Please verify your email first", 403);
+  }
+
+  if (!user.isActive) {
+    throw new AppError("Account is deactivated", 403);
+  }
+  if (user.isBlocked) {
+    throw new AppError("Account is blocked", 403);
+  }
+  const { name, role, _id } = user;
+  const token = jwt.sign({ name, email, role, _id }, process.env.JWT_KEY);
+  res.status(200).json({ message: "signed in successfully", token });
+});
 
 // const shareProfile = catchError(async (req, res) => {
 //   qrcode.toDataURL("http://localhost:3000/addmsg", (err, qr) => {
@@ -127,4 +144,4 @@ const verifyEmail = catchError(async (req, res) => {
 //   //mmkn n7ot .populate('user',{name:1}) hat alname
 // });
 
-export { signUp, verifyEmail };
+export { signUp, verifyEmail, signIn };

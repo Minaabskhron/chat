@@ -28,6 +28,7 @@ export const sendEmail = async (user) => {
     });
 
     user.emailVerificationToken = token;
+    // user.emailVerificationExpires = Date.now() + 900000;
     await user.save();
 
     await transporter.sendMail({
