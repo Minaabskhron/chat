@@ -166,23 +166,16 @@ const cancelRequest = catchError(async (req, res) => {
 
   if (!outgoing && !ingoing) throw new AppError("No existing request", 400);
 
-  if (outgoing) {
-    await userModel.findByIdAndUpdate(loggedUserId, {
-      $pull: { outgoingRequests: theOtherUserId },
-    });
+  await userModel.findByIdAndUpdate(loggedUserId, {
+    $pull: {
+      outgoingRequests: theOtherUserId,
+      incomingRequests: theOtherUserId,
+    },
+  });
 
-    await userModel.findByIdAndUpdate(theOtherUserId, {
-      $pull: { incomingRequests: loggedUserId },
-    });
-  } else if (ingoing) {
-    await userModel.findByIdAndUpdate(loggedUserId, {
-      $pull: { incomingRequests: theOtherUserId },
-    });
-
-    await userModel.findByIdAndUpdate(theOtherUserId, {
-      $pull: { outgoingRequests: loggedUserId },
-    });
-  }
+  await userModel.findByIdAndUpdate(theOtherUserId, {
+    $pull: { incomingRequests: loggedUserId, outgoingRequests: loggedUserId },
+  });
 
   res
     .status(200)
