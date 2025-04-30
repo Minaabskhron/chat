@@ -1,6 +1,6 @@
 //https://mongoosejs.com/docs/schematypes.html
 
-import { Schema, model } from "mongoose";
+import { Schema, Types, model } from "mongoose";
 import bcrypt from "bcrypt";
 
 const schema = new Schema(
@@ -68,10 +68,25 @@ const schema = new Schema(
       default: false,
     },
     emailVerificationToken: String,
-    // user: {
-    //   type: mongoose.Types.ObjectId,
-    //   ref: "User",
-    // },
+    friends: [
+      {
+        type: Types.ObjectId,
+        ref: "User",
+        validate: [(val) => val.length <= 5000, "Exceeds friends limit"],
+      },
+    ],
+    incomingRequests: [
+      {
+        type: Types.ObjectId,
+        ref: "User",
+      },
+    ],
+    outgoingRequests: [
+      {
+        type: Types.ObjectId,
+        ref: "User",
+      },
+    ],
     role: {
       type: String,
       enum: ["ADMIN", "USER"],

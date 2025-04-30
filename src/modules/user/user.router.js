@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { signIn, signUp, verifyEmail } from "./user.controller.js";
+import {
+  sendFriendRequest,
+  signIn,
+  signUp,
+  verifyEmail,
+} from "./user.controller.js";
+import { auth } from "./user.middleware.js";
 
 const userRouter = Router();
 
@@ -7,4 +13,5 @@ const userRouter = Router();
 userRouter.post("/signup", signUp);
 userRouter.get("/verify-email/:token", verifyEmail);
 userRouter.post("/signin", signIn);
+userRouter.post("/sendFriendRequest", auth, sendFriendRequest);
 export default userRouter;

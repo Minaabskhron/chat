@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { AppError, catchError } from "../../utils/handleErrors.js";
 import { sendEmail } from "../../servcies/sendEmail.js";
 import bcrypt from "bcrypt";
+import { Types } from "mongoose";
 //import qrcode from "qrcode";
 
 // const addUser = catchError(async (req, res) => {
@@ -28,7 +29,7 @@ const signUp = catchError(async (req, res) => {
     name,
   });
   const token = `Bearer ${jwt.sign(
-    { email, username, name },
+    { email, username, name, _id: user._id },
     process.env.JWT_KEY
     // {expiresIn: "1h",}
   )}`;
@@ -85,6 +86,39 @@ const signIn = catchError(async (req, res) => {
   const { name, role, _id } = user;
   const token = jwt.sign({ name, email, role, _id }, process.env.JWT_KEY);
   res.status(200).json({ message: "signed in successfully", token });
+});
+
+const sendFriendRequest = catchError(async (req, res) => {
+  const senderId = req.user._id;
+  const receiverId = new Types.ObjectId(String(req.body.id));
+
+  if (senderId.equals(receiverId))
+    throw new AppError("Cannot send request to yourself", 400);
+
+  const [sender, receiver] = await Promise.all([
+    userModel.findById(senderId),
+    userModel.findById(receiverId),
+  ]);
+
+  if (!receiver) throw new AppError("User not found", 404);
+
+  if (sender.outgoingRequests.includes(receiverId))
+    throw new AppError("Request already sent", 400);
+
+  if (sender.friends.includes(receiverId))
+    throw new AppError("Already friends", 400);
+
+  await userModel.findByIdAndUpdate(senderId, {
+    $addToSet: { outgoingRequests: receiverId },
+  });
+
+  await userModel.findByIdAndUpdate(receiverId, {
+    $addToSet: { incomingRequests: senderId },
+  });
+
+  res
+    .status(200)
+    .json({ status: "success", message: "Friend request sent successfully" });
 });
 
 // const shareProfile = catchError(async (req, res) => {
@@ -144,4 +178,4 @@ const signIn = catchError(async (req, res) => {
 //   //mmkn n7ot .populate('user',{name:1}) hat alname
 // });
 
-export { signUp, verifyEmail, signIn };
+export { signUp, verifyEmail, signIn, sendFriendRequest };
