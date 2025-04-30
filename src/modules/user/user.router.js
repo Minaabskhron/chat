@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  confirmRequest,
   sendFriendRequest,
   signIn,
   signUp,
@@ -13,5 +14,6 @@ const userRouter = Router();
 userRouter.post("/signup", signUp);
 userRouter.get("/verify-email/:token", verifyEmail);
 userRouter.post("/signin", signIn);
-userRouter.post("/sendFriendRequest", auth, sendFriendRequest);
+userRouter.post("/sendfriendrequest", auth, sendFriendRequest);
+userRouter.patch("/confirmrequest", auth, confirmRequest);
 export default userRouter;

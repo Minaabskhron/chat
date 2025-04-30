@@ -84,7 +84,10 @@ const signIn = catchError(async (req, res) => {
     throw new AppError("Account is blocked", 403);
   }
   const { name, role, _id } = user;
-  const token = jwt.sign({ name, email, role, _id }, process.env.JWT_KEY);
+  const token = `Bearer ${jwt.sign(
+    { name, email, role, _id },
+    process.env.JWT_KEY
+  )}`;
   res.status(200).json({ message: "signed in successfully", token });
 });
 
@@ -119,6 +122,25 @@ const sendFriendRequest = catchError(async (req, res) => {
   res
     .status(200)
     .json({ status: "success", message: "Friend request sent successfully" });
+});
+
+const confirmRequest = catchError(async (req, res) => {
+  const receiverId = req.user._id;
+  const senderId = new Types.ObjectId(String(req.body.id));
+
+  await userModel.findByIdAndUpdate(senderId, {
+    $pull: { outgoingRequests: receiverId },
+    $addToSet: { friends: receiverId },
+  });
+
+  await userModel.findByIdAndUpdate(receiverId, {
+    $pull: { incomingRequests: senderId },
+    $addToSet: { friends: senderId },
+  });
+
+  res
+    .status(200)
+    .json({ status: "success", message: "Friend request accepted" });
 });
 
 // const shareProfile = catchError(async (req, res) => {
@@ -178,4 +200,4 @@ const sendFriendRequest = catchError(async (req, res) => {
 //   //mmkn n7ot .populate('user',{name:1}) hat alname
 // });
 
-export { signUp, verifyEmail, signIn, sendFriendRequest };
+export { signUp, verifyEmail, signIn, sendFriendRequest, confirmRequest };
