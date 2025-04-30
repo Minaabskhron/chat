@@ -1,5 +1,6 @@
 import { Router } from "express";
 import {
+  cancelRequest,
   confirmRequest,
   sendFriendRequest,
   signIn,
@@ -16,4 +17,5 @@ userRouter.get("/verify-email/:token", verifyEmail);
 userRouter.post("/signin", signIn);
 userRouter.post("/sendfriendrequest", auth, sendFriendRequest);
 userRouter.patch("/confirmrequest", auth, confirmRequest);
+userRouter.patch("/cancelrequest", auth, cancelRequest);
 export default userRouter;

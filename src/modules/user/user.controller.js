@@ -126,7 +126,7 @@ const sendFriendRequest = catchError(async (req, res) => {
 
 const confirmRequest = catchError(async (req, res) => {
   const receiverId = req.user._id;
-  const senderId = new Types.ObjectId(String(req.body.id));
+  const senderId = req.body.id;
 
   await userModel.findByIdAndUpdate(senderId, {
     $pull: { outgoingRequests: receiverId },
@@ -141,6 +141,52 @@ const confirmRequest = catchError(async (req, res) => {
   res
     .status(200)
     .json({ status: "success", message: "Friend request accepted" });
+});
+
+const cancelRequest = catchError(async (req, res) => {
+  const loggedUserId = req.user._id;
+  const theOtherUserId = req.body.id;
+
+  if (!theOtherUserId) throw new AppError("Invalid user ID", 400);
+
+  const [loggedUser, theOtherUser] = await Promise.all([
+    userModel.findById(loggedUserId),
+    userModel.findById(theOtherUserId),
+  ]);
+
+  if (!loggedUser || !theOtherUser) throw new AppError("User not found", 400);
+
+  const outgoing = loggedUser.outgoingRequests.some((id) =>
+    id.equals(theOtherUserId)
+  );
+
+  const ingoing = loggedUser.incomingRequests.some((id) =>
+    id.equals(theOtherUserId)
+  );
+
+  if (!outgoing && !ingoing) throw new AppError("No existing request", 400);
+
+  if (outgoing) {
+    await userModel.findByIdAndUpdate(loggedUserId, {
+      $pull: { outgoingRequests: theOtherUserId },
+    });
+
+    await userModel.findByIdAndUpdate(theOtherUserId, {
+      $pull: { incomingRequests: loggedUserId },
+    });
+  } else if (ingoing) {
+    await userModel.findByIdAndUpdate(loggedUserId, {
+      $pull: { incomingRequests: theOtherUserId },
+    });
+
+    await userModel.findByIdAndUpdate(theOtherUserId, {
+      $pull: { outgoingRequests: loggedUserId },
+    });
+  }
+
+  res
+    .status(200)
+    .json({ status: "success", message: "Friend request cancelled" });
 });
 
 // const shareProfile = catchError(async (req, res) => {
@@ -200,4 +246,11 @@ const confirmRequest = catchError(async (req, res) => {
 //   //mmkn n7ot .populate('user',{name:1}) hat alname
 // });
 
-export { signUp, verifyEmail, signIn, sendFriendRequest, confirmRequest };
+export {
+  signUp,
+  verifyEmail,
+  signIn,
+  sendFriendRequest,
+  confirmRequest,
+  cancelRequest,
+};
