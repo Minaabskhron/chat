@@ -281,11 +281,29 @@ const resetPassword = catchError(async (req, res) => {
     throw new AppError("password used before", 400);
 
   user.password = password;
+  user.passwordChangedAt = Date.now();
   user.passwordResetCode = null;
   user.passwordResetExpires = null;
 
   await user.save();
 
+  res.json({ message: "Password updated successfully" });
+});
+
+const changePassword = catchError(async (req, res) => {
+  const user = await userModel.findById(req.user._id);
+
+  const { newPassword, password } = req.body;
+
+  if (!bcrypt.compareSync(password, user.password))
+    throw new AppError("The old password isn't right", 401);
+
+  if (bcrypt.compareSync(newPassword, user.password))
+    throw new AppError("password used before", 400);
+
+  user.password = newPassword;
+  user.passwordChangedAt = Date.now();
+  await user.save();
   res.json({ message: "Password updated successfully" });
 });
 
@@ -347,4 +365,5 @@ export {
   forgotPassword,
   verifyResetCode,
   resetPassword,
+  changePassword,
 };

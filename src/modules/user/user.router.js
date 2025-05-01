@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   cancelRequest,
+  changePassword,
   confirmRequest,
   forgotPassword,
   resetPassword,
@@ -26,4 +27,5 @@ userRouter.patch("/update", auth, updateUser);
 userRouter.post("/forgetPassword", forgotPassword);
 userRouter.post("/verifyresetCode", verifyResetCode);
 userRouter.post("/resetPassword", resetPassword);
+userRouter.patch("/changePassword", auth, changePassword);
 export default userRouter;
