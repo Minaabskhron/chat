@@ -98,7 +98,7 @@ const schema = new Schema(
       enum: ["ADMIN", "USER"],
       default: "USER",
     },
-    passwordResetCode: Number,
+    passwordResetCode: String,
     passwordChangedAt: Date,
     passwordResetExpires: Date,
   },

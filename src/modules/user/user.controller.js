@@ -66,9 +66,8 @@ const signIn = catchError(async (req, res) => {
   if (!password || (!email && !username)) {
     throw new AppError("Please provide email/username and password", 400);
   }
-  const user = await userModel
-    .findOne({ $or: [{ email }, { username }] })
-    .select("+isEmailVerified +isActive");
+  const user = await userModel.findOne({ $or: [{ email }, { username }] });
+
   if (!user || !bcrypt.compareSync(password, user.password)) {
     throw new AppError("Invalid credentials", 400);
   }
@@ -243,7 +242,7 @@ const forgotPassword = catchError(async (req, res) => {
     { email },
     {
       $set: {
-        hashedNumber: bcrypt.hashSync(resetCode, +process.env.SALT),
+        passwordResetCode: bcrypt.hashSync(resetCode, +process.env.SALT),
         passwordResetExpires: Date.now() + 15 * 60 * 1000,
       },
     }
@@ -252,7 +251,42 @@ const forgotPassword = catchError(async (req, res) => {
   if (!user) throw new AppError("User not found", 404);
 
   await sendNumber(user, resetCode);
-  res.json({ message: "Reset code sent to email" });
+  res.json({ message: "Reset code sent to email", resetCode });
+});
+
+const verifyResetCode = catchError(async (req, res) => {
+  const { email, resetCode } = req.body;
+  const user = await userModel.findOne({ email });
+  if (!user || !user.passwordResetCode)
+    throw new AppError("invalid request", 400);
+
+  if (user.passwordResetExpires < Date.now())
+    throw new AppError("reset code is expired", 400);
+
+  if (!bcrypt.compareSync(resetCode, user.passwordResetCode))
+    throw new AppError("reset code is not right", 400);
+
+  const tempToken = jwt.sign({ email }, process.env.JWT_RESET_KEY, {
+    expiresIn: "5m",
+  });
+  res.json({ message: "Reset code is right", token: tempToken });
+});
+
+const resetPassword = catchError(async (req, res) => {
+  const { password, token } = req.body;
+
+  const { email } = jwt.verify(token, process.env.JWT_RESET_KEY);
+  const user = await userModel.findOne({ email });
+  if (bcrypt.compareSync(password, user.password))
+    throw new AppError("password used before", 400);
+
+  user.password = password;
+  user.passwordResetCode = null;
+  user.passwordResetExpires = null;
+
+  await user.save();
+
+  res.json({ message: "Password updated successfully" });
 });
 
 // const shareProfile = catchError(async (req, res) => {
@@ -311,4 +345,6 @@ export {
   cancelRequest,
   updateUser,
   forgotPassword,
+  verifyResetCode,
+  resetPassword,
 };

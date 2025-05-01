@@ -3,11 +3,13 @@ import {
   cancelRequest,
   confirmRequest,
   forgotPassword,
+  resetPassword,
   sendFriendRequest,
   signIn,
   signUp,
   updateUser,
   verifyEmail,
+  verifyResetCode,
 } from "./user.controller.js";
 import { auth } from "./user.middleware.js";
 
@@ -22,4 +24,6 @@ userRouter.patch("/confirmrequest", auth, confirmRequest);
 userRouter.patch("/cancelrequest", auth, cancelRequest);
 userRouter.patch("/update", auth, updateUser);
 userRouter.post("/forgetPassword", forgotPassword);
+userRouter.post("/verifyresetCode", verifyResetCode);
+userRouter.post("/resetPassword", resetPassword);
 export default userRouter;

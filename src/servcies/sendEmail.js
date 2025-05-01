@@ -52,8 +52,6 @@ export const sendEmail = async (user) => {
 
 export const sendNumber = async (user, resetCode) => {
   try {
-    const { email, name } = user;
-
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
