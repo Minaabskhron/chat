@@ -251,7 +251,7 @@ const forgotPassword = catchError(async (req, res) => {
   if (!user) throw new AppError("User not found", 404);
 
   await sendNumber(user, resetCode);
-  res.json({ message: "Reset code sent to email", resetCode });
+  res.json({ message: "Reset code sent to email" });
 });
 
 const verifyResetCode = catchError(async (req, res) => {
@@ -306,6 +306,9 @@ const changePassword = catchError(async (req, res) => {
   await user.save();
   res.json({ message: "Password updated successfully" });
 });
+
+//block and unblock
+//1.block removes from friends if friends and from friendsrequests
 
 // const shareProfile = catchError(async (req, res) => {
 //   qrcode.toDataURL("http://localhost:3000/addmsg", (err, qr) => {
