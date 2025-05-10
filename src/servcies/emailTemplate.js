@@ -58,7 +58,7 @@ export const emailTemplate = (token) => {
                                                                     <table border="0" cellpadding="0" cellspacing="0" align="center">
                                                                         <tbody>
                                                                             <tr>
-                                                                                <td style="background-color: rgb(0, 210, 244); padding: 12px 35px; border-radius: 50px;" align="center" class="ctaButton"> <a href=${process.env.CLIENT_URL}/api/v1/user/verify-email/${token} style="color:#fff;font-family:Poppins,Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;font-style:normal;letter-spacing:1px;line-height:20px;text-transform:uppercase;text-decoration:none;display:block" target="_blank" class="text">Confirm Email</a>
+                                                                                <td style="background-color: rgb(0, 210, 244); padding: 12px 35px; border-radius: 50px;" align="center" class="ctaButton"> <a href=${process.env.BACK_URL}/api/v1/user/verify-email/${token} style="color:#fff;font-family:Poppins,Helvetica,Arial,sans-serif;font-size:13px;font-weight:600;font-style:normal;letter-spacing:1px;line-height:20px;text-transform:uppercase;text-decoration:none;display:block" target="_blank" class="text">Confirm Email</a>
                                                                                 </td>
                                                                             </tr>
                                                                         </tbody>

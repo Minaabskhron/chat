@@ -314,6 +314,16 @@ const changePassword = catchError(async (req, res) => {
   res.json({ message: "Password updated successfully" });
 });
 
+const getAllUsers = catchError(async (req, res) => {
+  const currentUserId = req.user._id;
+  const users = await userModel
+    .find({
+      _id: { $ne: currentUserId },
+    })
+    .select("-password"); // Exclude sensitive fields
+  res.status(200).json({ message: "susccess", users });
+});
+
 //block and unblock
 //1.block removes from friends if friends and from friendsrequests
 
@@ -376,4 +386,5 @@ export {
   verifyResetCode,
   resetPassword,
   changePassword,
+  getAllUsers,
 };
