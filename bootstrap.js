@@ -15,7 +15,7 @@ export const bootstrap = (app) => {
   );
   app.use(
     cors({
-      origin: ["https://your-vercel-app.vercel.app"],
+      origin: ["https://chatfront-git-main-minaabskhrons-projects.vercel.app"],
       credentials: true,
     })
   );
