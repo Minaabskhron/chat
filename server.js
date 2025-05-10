@@ -16,6 +16,8 @@ import dbConnection from "./database/dbConnection.js";
 import { bootstrap } from "./bootstrap.js";
 import http from "http";
 import { Server } from "socket.io";
+import jwt from "jsonwebtoken";
+import userModel from "./src/modules/user/user.model.js";
 
 dotenv.config();
 //import { v2 as cloudinary } from "cloudinary";
@@ -27,7 +29,8 @@ dotenv.config();
 //  });
 
 const app = express();
-const port = process.env.PORT || 3000;
+
+const port = process.env.PORT || 5000;
 
 // Create HTTP server
 const httpServer = http.createServer(app);
@@ -54,7 +57,7 @@ io.use(async (socket, next) => {
     if (!user) return next(new Error("Authentication error"));
     socket.user = user;
     next();
-  } catch (error) {
+  } catch {
     next(new Error("Authentication failed"));
   }
 });
@@ -77,6 +80,13 @@ io.on("connection", (socket) => {
 
 // Attach Socket.IO to app
 app.io = io;
+
+//errors
+io.on("connection", (socket) => {
+  socket.on("error", (error) => {
+    console.log("Socket error:", error);
+  });
+});
 
 dbConnection(); //gwa database bara 5als
 bootstrap(app); //bara 5als

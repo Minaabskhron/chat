@@ -39,7 +39,7 @@ const sendMessage = catchError(async (req, res) => {
     .findByIdAndUpdate(
       conversation._id,
       {
-        $set: { lastMessage: message._id },
+        $set: { lastMessage: message._id, initiator: senderId },
         $inc: { unreadCount: 1 },
       },
       { new: true }
@@ -49,6 +49,31 @@ const sendMessage = catchError(async (req, res) => {
   const populatedMessage = await message.populate({
     path: "sender",
     select: "username", //hna hireplace alsender bl username bta3o
+  });
+
+  req.app.io.to(conversation._id.toString()).emit("new-message", {
+    //Sends the new message to all clients in the conversation room
+    //Alice types "Hi Bob!" and hits send
+    // Only Bob needs to get the actual message
+    message: populatedMessage,
+    unreadCount: updatedConversation.unreadCount,
+  });
+
+  updatedConversation.participants.forEach((participant) => {
+    if (!participant.equals(senderId)) {
+      //Prevents sending update notifications to the message sender
+      // Check: "Is this participant Alice?"
+      // Only send to Bob
+
+      req.app.io.emit("conversation-update", {
+        //Broadcasts conversation updates to all connected clients
+        // Everyone except Alice sees the conversation list update
+
+        conversationId: conversation._id,
+        lastMessage: populatedMessage,
+        unreadCount: updatedConversation.unreadCount,
+      });
+    }
   });
 
   res.status(201).json({

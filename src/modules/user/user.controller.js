@@ -83,11 +83,18 @@ const signIn = catchError(async (req, res) => {
     throw new AppError("Account is blocked", 403);
   }
   const { name, role, _id } = user;
+  const returnedUser = {
+    name: user.name,
+    email: user.email,
+    role: user.role,
+  };
   const token = `Bearer ${jwt.sign(
     { name, email, role, _id },
     process.env.JWT_KEY
   )}`;
-  res.status(200).json({ message: "signed in successfully", token });
+  res
+    .status(200)
+    .json({ message: "signed in successfully", token, user: returnedUser });
 });
 
 const sendFriendRequest = catchError(async (req, res) => {

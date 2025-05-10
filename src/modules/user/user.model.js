@@ -35,7 +35,7 @@ const schema = new Schema(
       required: true,
       lowercase: true,
       index: true, //search bib2a asahl
-      match: [/^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$/, "Invalid email format"],
+      match: [/^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/, "Invalid email format"],
     },
     password: {
       type: String,
