@@ -9,7 +9,7 @@ export const bootstrap = (app) => {
   const allowedOrigins = [
     "http://localhost:3000", // Local development
     "https://chatfront-git-main-minaabskhrons-projects.vercel.app", // Your Vercel URL
-    "https://chat-production-0ee4.up.railway.app", // Add your final domain later
+    "https://chat-production-96ee.up.railway.app", // Add your final domain later
   ];
   app.use(
     cors({
