@@ -13,6 +13,12 @@ export const bootstrap = (app) => {
       methods: ["GET", "POST", "PUT", "DELETE"],
     })
   );
+  app.use(
+    cors({
+      origin: ["https://your-vercel-app.vercel.app"],
+      credentials: true,
+    })
+  );
   //app.use(cors()); //3ashan trf3 alcode 3ala server
   app.use(json()); //parses incoming JSON bodies..
   app.use("/api/v1", v1Router); //gwa alsrc routers v1.routes.js mgrouter
