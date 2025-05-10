@@ -6,17 +6,15 @@ import cors from "cors";
 //import cors from "cors"; //npm i cors @types/cors
 
 export const bootstrap = (app) => {
+  const allowedOrigins = [
+    "http://localhost:3000", // Local development
+    "https://chatfront-git-main-minaabskhrons-projects.vercel.app", // Your Vercel URL
+    "https://chat-production-0ee4.up.railway.app", // Add your final domain later
+  ];
   app.use(
     cors({
-      origin: "http://localhost:3000",
-      credentials: true,
-      methods: ["GET", "POST", "PUT", "DELETE"],
-    })
-  );
-  app.use(
-    cors({
-      origin: ["https://chatfront-git-main-minaabskhrons-projects.vercel.app"],
-      credentials: true,
+      origin: allowedOrigins,
+      credentials: true, // If using cookies/auth
     })
   );
   //app.use(cors()); //3ashan trf3 alcode 3ala server
