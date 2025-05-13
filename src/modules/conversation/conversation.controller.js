@@ -5,7 +5,8 @@ const getAllConversations = catchError(async (req, res) => {
   const senderId = req.user._id;
   const conversations = await conversationModel
     .find({ $or: [{ participants: senderId }] })
-    .populate({ path: "participants", select: "username" });
+    .populate({ path: "participants", select: "username name" })
+    .populate({ path: "lastMessage", select: "text createdAt" });
   if (!conversations)
     return res
       .status(200)
@@ -28,6 +29,7 @@ const getAllConversations = catchError(async (req, res) => {
         // Add receiver field with simplified data
         _id: receiver._id, // Receiver's database ID
         username: receiver.username, // Receiver's display name
+        name: receiver.name, // Receiver's display name
       },
     };
   });

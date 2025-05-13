@@ -15,9 +15,7 @@ import dotenv from "dotenv";
 import dbConnection from "./database/dbConnection.js";
 import { bootstrap } from "./bootstrap.js";
 import http from "http";
-import { Server } from "socket.io";
-import jwt from "jsonwebtoken";
-import userModel from "./src/modules/user/user.model.js";
+import { initializeSocket } from "./src/socket/index.js";
 
 dotenv.config();
 //import { v2 as cloudinary } from "cloudinary";
@@ -36,57 +34,8 @@ const port = process.env.PORT || 5000;
 const httpServer = http.createServer(app);
 
 // Configure Socket.IO
-const io = new Server(httpServer, {
-  cors: {
-    origin: process.env.CLIENT_URL,
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
-
-// Socket.IO Authentication Middleware
-io.use(async (socket, next) => {
-  try {
-    const token = socket.handshake.auth.token;
-    const decoded = jwt.verify(
-      token.replace("Bearer ", ""),
-      process.env.JWT_KEY
-    );
-    const user = await userModel.findById(decoded._id);
-
-    if (!user) return next(new Error("Authentication error"));
-    socket.user = user;
-    next();
-  } catch {
-    next(new Error("Authentication failed"));
-  }
-});
-
-// Socket.IO Connection Handler
-io.on("connection", (socket) => {
-  console.log(`User connected: ${socket.user._id}`);
-
-  // Join user to their conversation rooms
-  socket.on("join-conversations", (conversationIds) => {
-    conversationIds.forEach((convId) => {
-      socket.join(convId.toString());
-    });
-  });
-
-  socket.on("disconnect", () => {
-    console.log(`User disconnected: ${socket.user._id}`);
-  });
-});
-
-// Attach Socket.IO to app
+const io = initializeSocket(httpServer);
 app.io = io;
-
-//errors
-io.on("connection", (socket) => {
-  socket.on("error", (error) => {
-    console.log("Socket error:", error);
-  });
-});
 
 dbConnection(); //gwa database bara 5als
 bootstrap(app); //bara 5als

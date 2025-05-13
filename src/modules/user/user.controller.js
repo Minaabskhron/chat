@@ -28,13 +28,9 @@ const signUp = catchError(async (req, res) => {
     gender,
     name,
   });
-  const token = `Bearer ${jwt.sign(
-    { email, username, name, _id: user._id },
-    process.env.JWT_KEY
-    // {expiresIn: "1h",}
-  )}`;
+
   if (user) await sendEmail(user);
-  res.status(201).json({ message: "Success", token });
+  res.status(201).json({ message: "Success" });
 });
 
 const verifyEmail = catchError(async (req, res) => {
@@ -87,6 +83,7 @@ const signIn = catchError(async (req, res) => {
     name: user.name,
     email: user.email,
     role: user.role,
+    username: user.username,
   };
   const token = `Bearer ${jwt.sign(
     { name, email, role, _id },
