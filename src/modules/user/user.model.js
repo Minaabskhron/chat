@@ -101,6 +101,11 @@ const schema = new Schema(
     passwordResetCode: String,
     passwordChangedAt: Date,
     passwordResetExpires: Date,
+    lastSeen: Date,
+    isOnline: {
+      type: Boolean,
+      default: false,
+    },
   },
 
   { timestamps: true }

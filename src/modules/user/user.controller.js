@@ -321,6 +321,20 @@ const getAllUsers = catchError(async (req, res) => {
   res.status(200).json({ message: "susccess", users });
 });
 
+const getUser = catchError(async (req, res) => {
+  const id = req.params.id;
+  if (!id) throw new AppError("there is no id", 400);
+
+  if (!Types.ObjectId.isValid(id)) {
+    throw new AppError("Invalid user ID", 400);
+  }
+  const user = await userModel.findById(id).select("-password");
+
+  if (!user) throw new AppError("the user is not found", 400);
+
+  res.status(200).json({ message: "success", user });
+});
+
 //block and unblock
 //1.block removes from friends if friends and from friendsrequests
 
@@ -384,4 +398,5 @@ export {
   resetPassword,
   changePassword,
   getAllUsers,
+  getUser,
 };

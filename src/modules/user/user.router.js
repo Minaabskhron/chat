@@ -5,6 +5,7 @@ import {
   confirmRequest,
   forgotPassword,
   getAllUsers,
+  getUser,
   resetPassword,
   sendFriendRequest,
   signIn,
@@ -30,4 +31,5 @@ userRouter.post("/verifyresetCode", verifyResetCode);
 userRouter.post("/resetPassword", resetPassword);
 userRouter.patch("/changePassword", auth, changePassword);
 userRouter.get("/getAllusers", auth, getAllUsers);
+userRouter.get("/getuser/:id", getUser);
 export default userRouter;
