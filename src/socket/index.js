@@ -17,11 +17,11 @@ export const initializeSocket = (httpServer) => {
     },
   });
 
-  // 2) create the in-memory onlineUsers map here
-  const onlineUsers = new Map();
-
   // Apply middleware
   io.use(authenticateSocket); // Apply auth middleware to all connections
+
+  // 2) create the in-memory onlineUsers map here
+  const onlineUsers = new Map();
 
   // Register event handlers
   io.on("connection", (socket) => {
