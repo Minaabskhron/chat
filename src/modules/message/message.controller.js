@@ -39,7 +39,11 @@ const sendMessage = catchError(async (req, res) => {
     .findByIdAndUpdate(
       conversation._id,
       {
-        $set: { lastMessage: message._id, initiator: senderId },
+        $set: {
+          lastMessage: message._id,
+          initiator: senderId,
+          lastMessageTime: message.createdAt, // Add this line
+        },
         $inc: { unreadCount: 1 },
       },
       { new: true }
@@ -83,7 +87,7 @@ const sendMessage = catchError(async (req, res) => {
   });
 });
 
-const getAllConversation = catchError(async (req, res) => {
+const getConversation = catchError(async (req, res) => {
   const senderId = req.user._id;
   const { receiverId } = req.params;
 
@@ -116,4 +120,4 @@ const getAllConversation = catchError(async (req, res) => {
   res.status(200).json({ message: "sucess", messages });
 });
 
-export { sendMessage, getAllConversation };
+export { sendMessage, getConversation };

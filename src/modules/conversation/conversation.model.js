@@ -28,6 +28,9 @@ const schema = new Schema(
       type: Types.ObjectId, // Reference to last message
       ref: "Message", // Reference to Message model
     },
+    lastMessageTime: {
+      type: Date,
+    },
     unreadCount: {
       type: Number,
       default: 0, // Initialize counter at 0
