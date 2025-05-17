@@ -83,7 +83,7 @@ const sendMessage = catchError(async (req, res) => {
   });
 });
 
-const getConversation = catchError(async (req, res) => {
+const getAllConversation = catchError(async (req, res) => {
   const senderId = req.user._id;
   const { receiverId } = req.params;
 
@@ -116,4 +116,4 @@ const getConversation = catchError(async (req, res) => {
   res.status(200).json({ message: "sucess", messages });
 });
 
-export { sendMessage, getConversation };
+export { sendMessage, getAllConversation };
