@@ -1,23 +1,17 @@
-export const registerChatHandlers = (io, socket) => {
-  // Chat-specific handlers
-  // Handle joining conversations
+// events/chat.js
+export function registerChatHandlers(io, socket) {
   socket.on("join-conversations", (conversationIds) => {
-    // Validate input format
-    if (!Array.isArray(conversationIds)) {
-      return socket.emit("error", "Invalid conversation IDs format");
-    }
-
-    // Process each conversation ID
+    if (!Array.isArray(conversationIds)) return;
     conversationIds.forEach((convId) => {
-      // Validate ID type
-      if (typeof convId !== "string" && typeof convId !== "number") {
-        return socket.emit("error", "Invalid conversation ID type");
-      }
-      // Join the room
       socket.join(convId.toString());
     });
   });
 
-  // Additional chat events would be added here
-  // Example: socket.on('send-message', handleMessage);
-};
+  socket.on("send-message", ({ conversationId, text }) => {
+    // save to DB then…
+    io.to(conversationId.toString()).emit("new-message", {
+      text,
+      conversationId,
+    });
+  });
+}
