@@ -2,54 +2,84 @@ import { Server } from "socket.io";
 import { authenticateSocket } from "./auth.js";
 import { registerBaseHandlers } from "./events/base.js";
 import { registerChatHandlers } from "./events/chat.js";
+import conversationModel from "../modules/conversation/conversation.model.js";
 import userModel from "../modules/user/user.model.js";
 
+const onlineUsers = new Map();
+
 export const initializeSocket = (httpServer) => {
-  // Main export function
   const io = new Server(httpServer, {
-    // Create Socket.io server
     cors: {
-      // CORS configuration
-      origin: process.env.CLIENT_URL || "*", // Allowed origins
-      methods: ["GET", "POST", "PUT", "DELETE"], // Allowed HTTP methods
-      allowedHeaders: ["Authorization"], // Allowed headers
-      credentials: true, // Allow cookies/auth
+      origin: process.env.BACK_URL?.split(",") || "*", // Add null check
+      methods: ["GET", "POST"],
+      credentials: true,
+    },
+    connectionStateRecovery: {
+      maxDisconnectionDuration: 2 * 60 * 1000,
+      skipMiddlewares: true,
     },
   });
 
-  // Apply middleware
-  io.use(authenticateSocket); // Apply auth middleware to all connections
+  io.use(authenticateSocket);
 
-  // 2) create the in-memory onlineUsers map here
-  const onlineUsers = new Map();
-
-  // Register event handlers
-  io.on("connection", (socket) => {
-    // after authenticateSocket, socket.user is set
+  io.on("connection", async (socket) => {
     const userId = socket.user._id.toString();
 
-    onlineUsers.set(userId, socket.id);
-    // Handle new connections
+    // Track user's sockets
+    if (!onlineUsers.has(userId)) {
+      onlineUsers.set(userId, new Set());
+    }
+    const userSockets = onlineUsers.get(userId);
+    userSockets.add(socket.id);
 
-    userModel
-      .findByIdAndUpdate(userId, { isOnline: true })
-      .catch(console.error);
+    // Update online status only if first connection
+    if (userSockets.size === 1) {
+      await userModel
+        .findByIdAndUpdate(userId, {
+          isOnline: true,
+          $unset: { lastSeen: 1 },
+        })
+        .catch((err) =>
+          console.error(`Online status error [${socket.id}]:`, err)
+        );
+    }
 
-    registerBaseHandlers(io, socket); // Register core events
-    registerChatHandlers(io, socket); // Register chat events
+    // Join existing conversation rooms
+    try {
+      const conversations = await conversationModel
+        .find({
+          participants: userId,
+        })
+        .select("_id")
+        .lean();
+
+      conversations.forEach((conv) => {
+        socket.join(`conv_${conv._id}`); // Add namespace prefix
+      });
+    } catch (err) {
+      console.error(`Room join error [${socket.id}]:`, err);
+    }
+
+    registerBaseHandlers(io, socket);
+    registerChatHandlers(io, socket);
 
     socket.on("disconnect", async () => {
-      onlineUsers.delete(userId);
-      try {
-        await userModel.findByIdAndUpdate(userId, {
-          isOnline: false,
-          lastSeen: new Date(),
-        });
-      } catch (err) {
-        console.error("Error saving lastSeen:", err);
+      const userSockets = onlineUsers.get(userId) || new Set();
+      userSockets.delete(socket.id);
+
+      if (userSockets.size === 0) {
+        onlineUsers.delete(userId);
+        await userModel
+          .findByIdAndUpdate(userId, {
+            isOnline: false,
+            lastSeen: new Date(),
+          })
+          .catch((err) =>
+            console.error(`Offline status error [${socket.id}]:`, err)
+          );
       }
     });
   });
 
-  return io; // Return configured Socket.io instance
+  return io;
 };

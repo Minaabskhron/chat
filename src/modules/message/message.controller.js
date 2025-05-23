@@ -29,11 +29,17 @@ const sendMessage = catchError(async (req, res) => {
     { new: true, upsert: true, runValidators: true } //upsert making the conversation if it is not found
   );
 
-  const message = await messageModel.create({
-    conversation: conversation._id,
-    sender: senderId,
-    text,
-  });
+  const message = await messageModel
+    .create({
+      conversation: conversation._id,
+      sender: senderId,
+      text,
+    })
+    .catch((err) => {
+      console.log(err);
+
+      throw new AppError("Message creation failed", 500);
+    });
 
   const updatedConversation = await conversationModel
     .findByIdAndUpdate(
@@ -42,40 +48,41 @@ const sendMessage = catchError(async (req, res) => {
         $set: {
           lastMessage: message._id,
           initiator: senderId,
-          lastMessageTime: message.createdAt, // Add this line
+          lastMessageTime: message.createdAt,
         },
-        $inc: { unreadCount: 1 },
+        $inc: {
+          // Only increment for non-sender participants
+          [`unreadCount.${receiverId}`]: 1,
+        },
       },
       { new: true }
     )
-    .populate("participants", "username"); //hna higeb al object id w alusername bta3o
+    .populate("participants", "username _id");
 
   const populatedMessage = await message.populate({
     path: "sender",
-    select: "username", //hna hireplace alsender bl username bta3o
+    select: "username avatar email",
   });
 
-  req.app.io.to(conversation._id.toString()).emit("new-message", {
-    //Sends the new message to all clients in the conversation room
-    //Alice types "Hi Bob!" and hits send
-    // Only Bob needs to get the actual message
-    message: populatedMessage,
+  const roomName = `conv_${conversation._id}`;
+
+  req.app.io.to(roomName).emit("new-message", {
+    _id: populatedMessage._id,
+    text: populatedMessage.text,
+    createdAt: populatedMessage.createdAt,
+    sender: populatedMessage.sender,
+    conversationId: conversation._id,
     unreadCount: updatedConversation.unreadCount,
   });
 
   updatedConversation.participants.forEach((participant) => {
-    if (!participant.equals(senderId)) {
-      //Prevents sending update notifications to the message sender
-      // Check: "Is this participant Alice?"
-      // Only send to Bob
-
-      req.app.io.emit("conversation-update", {
-        //Broadcasts conversation updates to all connected clients
-        // Everyone except Alice sees the conversation list update
-
+    const participantId = participant._id.toString();
+    if (participantId !== senderId.toString()) {
+      req.app.io.to(participantId).emit("conversation-update", {
         conversationId: conversation._id,
-        lastMessage: populatedMessage,
-        unreadCount: updatedConversation.unreadCount,
+        lastMessage: populatedMessage.text,
+        unreadCount: updatedConversation.unreadCount[participantId] || 0,
+        timestamp: new Date(),
       });
     }
   });

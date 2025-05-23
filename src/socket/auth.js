@@ -2,26 +2,29 @@ import jwt from "jsonwebtoken";
 import userModel from "../modules/user/user.model.js";
 
 export const authenticateSocket = async (socket, next) => {
-  // Middleware function
   try {
     const token =
-      socket.handshake.auth?.token || socket.handshake.headers?.authorization;
+      socket.handshake.auth?.token ||
+      socket.handshake.headers?.authorization?.replace("Bearer ", "");
 
-    if (!token) return next(new Error("Authentication required")); // Reject if no token
+    if (!token) {
+      return next(new Error("Authentication token required"));
+    }
 
-    // Verify JWT (remove 'Bearer ' prefix if present)
+    const decoded = jwt.verify(token, process.env.JWT_KEY);
+    const user = await userModel
+      .findById(decoded._id)
+      .select("_id username isOnline lastSeen conversations")
+      .lean();
 
-    const decoded = jwt.verify(
-      token.replace("Bearer ", ""),
-      process.env.JWT_KEY
-    );
-    // Find user in database
-    const user = await userModel.findById(decoded._id);
-    if (!user) return next(new Error("User not found"));
+    if (!user) {
+      return next(new Error("User not found"));
+    }
 
-    socket.user = user; // Attach user object to socket
+    socket.user = user;
     next();
-  } catch {
-    next(new Error("Authentication failed"));
+  } catch (err) {
+    console.error(`Socket auth error [${socket.id}]:`, err.message);
+    next(new Error("Invalid or expired token"));
   }
 };
