@@ -16,6 +16,7 @@ const sendMessage = catchError(async (req, res) => {
     isActive: true,
     isBlocked: false,
   });
+
   if (!receiver) throw new AppError("user not found", 400);
 
   const participants = [senderId, receiverId] //bnrtbhom 3shan mib2ash feh 2 conversations ben a w b aw b w a
@@ -61,7 +62,7 @@ const sendMessage = catchError(async (req, res) => {
 
   const populatedMessage = await message.populate({
     path: "sender",
-    select: "username avatar email",
+    select: "username email",
   });
 
   const roomName = `conv_${conversation._id}`;

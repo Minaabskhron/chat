@@ -4,16 +4,18 @@ import conversationModel from "../../modules/conversation/conversation.model.js"
 export function registerChatHandlers(io, socket) {
   socket.on("join-conversations", async (conversationIds, callback) => {
     try {
-      // Validate callback existence
-      if (typeof callback !== "function") {
-        throw new Error("Callback function required");
-      }
+      // Check if callback exists and is a function
+      const hasCallback = typeof callback === "function";
 
+      // Validate input format
       if (!Array.isArray(conversationIds)) {
-        throw new Error("Invalid conversation IDs format");
+        const error = new Error("Invalid conversation IDs format");
+        if (hasCallback)
+          return callback({ status: "error", message: error.message });
+        throw error;
       }
 
-      // Convert to ObjectIDs and validate
+      // Validate and convert IDs
       const validIds = conversationIds
         .map((id) => {
           try {
@@ -24,24 +26,42 @@ export function registerChatHandlers(io, socket) {
         })
         .filter(Boolean);
 
-      const validConversations = await conversationModel.find({
-        _id: { $in: validIds },
-        participants: socket.user._id,
-      });
+      if (validIds.length === 0) {
+        const error = new Error("No valid conversation IDs provided");
+        if (hasCallback)
+          return callback({ status: "error", message: error.message });
+        throw error;
+      }
 
-      // Join rooms with standardized naming
+      // Find conversations user is part of
+      const validConversations = await conversationModel
+        .find({
+          _id: { $in: validIds },
+          participants: socket.user._id,
+        })
+        .exec();
+
+      // Join rooms
       validConversations.forEach((conv) => {
         socket.join(`conv_${conv._id}`);
+        console.log(`User ${socket.user._id} joined conv_${conv._id}`);
       });
 
-      callback({
-        status: "success",
-        joined: validConversations.map((conv) => conv._id.toString()),
-      });
+      // Send response only if callback exists
+      if (hasCallback) {
+        callback({
+          status: "success",
+          joined: validConversations.map((conv) => conv._id.toString()),
+        });
+      }
     } catch (err) {
-      console.error(`Join error [${socket.id}]:`, err);
+      console.error(`Join error [${socket.id}]:`, err.message);
       if (typeof callback === "function") {
-        callback({ status: "error", message: err.message });
+        callback({
+          status: "error",
+          message: err.message,
+          code: err.code, // Optional: add error codes
+        });
       }
     }
   });

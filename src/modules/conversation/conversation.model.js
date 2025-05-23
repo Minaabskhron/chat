@@ -28,12 +28,12 @@ const schema = new Schema(
       type: Types.ObjectId, // Reference to last message
       ref: "Message", // Reference to Message model
     },
-    lastMessageTime: {
-      type: Date,
-    },
+    lastMessageTime: Date,
+
     unreadCount: {
-      type: Number,
-      default: 0, // Initialize counter at 0
+      type: Map,
+      of: Number,
+      default: () => ({}),
     },
   },
   {
@@ -43,6 +43,8 @@ const schema = new Schema(
     toObject: { virtuals: true }, // Include virtuals in objects
   }
 );
+
+schema.index({ participants: 1, lastMessageTime: -1 });
 
 schema.pre("save", function (next) {
   if (this.participants.length === 2) {
