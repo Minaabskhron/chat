@@ -7,16 +7,22 @@ import cors from "cors";
 
 export const bootstrap = (app) => {
   const allowedOrigins = [
-    "http://localhost:3000", // Local development
-    "https://chatfront-git-main-minaabskhrons-projects.vercel.app", // Your Vercel URL
-    "https://chat-production-96ee.up.railway.app", // Add your final domain later
+    "http://localhost:3000",
+    "https://chatfront-git-main-minaabskhrons-projects.vercel.app",
+    "https://chat-production-96ee.up.railway.app",
   ];
+
   app.use(
     cors({
       origin: allowedOrigins,
-      credentials: true, // If using cookies/auth
+      credentials: true,
+      methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+      allowedHeaders: ["Content-Type", "Authorization", "token"],
     })
   );
+
+  // handle preflight for **all** routes
+
   //app.use(cors()); //3ashan trf3 alcode 3ala server
   app.use(json()); //parses incoming JSON bodies..
   app.use("/api/v1", v1Router); //gwa alsrc routers v1.routes.js mgrouter

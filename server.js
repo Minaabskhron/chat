@@ -12,9 +12,11 @@
 
 import express from "express";
 import dotenv from "dotenv";
+import http from "http";
+import { Server as IOServer } from "socket.io";
 import dbConnection from "./database/dbConnection.js";
 import { bootstrap } from "./bootstrap.js";
-import http from "http";
+import { registerSocketHandlers } from "./src/socket/index.js";
 
 dotenv.config();
 //import { v2 as cloudinary } from "cloudinary";
@@ -31,6 +33,19 @@ const port = process.env.PORT || 5000;
 
 // Create HTTP server
 const httpServer = http.createServer(app);
+
+const io = new IOServer(httpServer, {
+  cors: {
+    origin: [
+      "http://localhost:3000",
+      "https://chatfront-git-main-minaabskhrons-projects.vercel.app",
+      "https://chat-production-96ee.up.railway.app",
+    ],
+    credentials: true,
+  },
+});
+
+registerSocketHandlers(io);
 
 dbConnection(); //gwa database bara 5als
 bootstrap(app); //bara 5als

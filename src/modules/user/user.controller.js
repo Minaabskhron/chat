@@ -84,6 +84,7 @@ const signIn = catchError(async (req, res) => {
     email: user.email,
     role: user.role,
     username: user.username,
+    _id: user._id,
   };
   const token = `Bearer ${jwt.sign(
     { name, email, role, _id },

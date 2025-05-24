@@ -3,66 +3,16 @@ import { AppError, catchError } from "../../utils/handleErrors.js";
 import conversationModel from "../conversation/conversation.model.js";
 import userModel from "../user/user.model.js";
 import messageModel from "./message.model.js";
+import { createMessage } from "./message.service.js";
 
 const sendMessage = catchError(async (req, res) => {
   const senderId = req.user._id;
   const { receiverId, text } = req.body;
 
-  if (!receiverId || !text)
-    throw new AppError("Receiver ID and message text are required", 400);
-
-  const receiver = await userModel.findOne({
-    _id: receiverId,
-    isActive: true,
-    isBlocked: false,
-  });
-
-  if (!receiver) throw new AppError("user not found", 400);
-
-  const participants = [senderId, receiverId] //bnrtbhom 3shan mib2ash feh 2 conversations ben a w b aw b w a
-    .map((id) => id.toString())
-    .sort()
-    .map((id) => new Types.ObjectId(id));
-
-  const conversation = await conversationModel.findOneAndUpdate(
-    { participants }, //if found return the existing document
-    { $setOnInsert: { participants } }, //if not make it
-    { new: true, upsert: true, runValidators: true } //upsert making the conversation if it is not found
-  );
-
-  const message = await messageModel
-    .create({
-      conversation: conversation._id,
-      sender: senderId,
-      text,
-    })
-    .catch((err) => {
-      console.log(err);
-
-      throw new AppError("Message creation failed", 500);
-    });
-
-  const updatedConversation = await conversationModel
-    .findByIdAndUpdate(
-      conversation._id,
-      {
-        $set: {
-          lastMessage: message._id,
-          initiator: senderId,
-          lastMessageTime: message.createdAt,
-        },
-        $inc: {
-          // Only increment for non-sender participants
-          [`unreadCount.${receiverId}`]: 1,
-        },
-      },
-      { new: true }
-    )
-    .populate("participants", "username _id");
-
-  const populatedMessage = await message.populate({
-    path: "sender",
-    select: "username email",
+  const { populatedMessage, updatedConversation } = await createMessage({
+    senderId,
+    receiverId,
+    text,
   });
 
   res.status(201).json({
