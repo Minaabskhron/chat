@@ -45,7 +45,8 @@ export function registerSocketHandlers(io) {
           isOnline: false,
         });
 
-        io.emit("user-offline", {
+        // Notify _everyone except_ the socket that just disconnected:
+        socket.broadcast.emit("user-offline", {
           userId: thisUserId,
           lastSeen: new Date().toISOString(),
         });
