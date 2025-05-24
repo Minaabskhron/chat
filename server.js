@@ -15,7 +15,6 @@ import dotenv from "dotenv";
 import dbConnection from "./database/dbConnection.js";
 import { bootstrap } from "./bootstrap.js";
 import http from "http";
-import { initializeSocket } from "./src/socket/index.js";
 
 dotenv.config();
 //import { v2 as cloudinary } from "cloudinary";
@@ -32,10 +31,6 @@ const port = process.env.PORT || 5000;
 
 // Create HTTP server
 const httpServer = http.createServer(app);
-
-// Configure Socket.IO
-const io = initializeSocket(httpServer);
-app.io = io;
 
 dbConnection(); //gwa database bara 5als
 bootstrap(app); //bara 5als

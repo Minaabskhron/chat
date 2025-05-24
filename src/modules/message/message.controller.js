@@ -65,29 +65,6 @@ const sendMessage = catchError(async (req, res) => {
     select: "username email",
   });
 
-  const roomName = `conv_${conversation._id}`;
-
-  req.app.io.to(roomName).emit("new-message", {
-    _id: populatedMessage._id,
-    text: populatedMessage.text,
-    createdAt: populatedMessage.createdAt,
-    sender: populatedMessage.sender,
-    conversationId: conversation._id,
-    unreadCount: updatedConversation.unreadCount,
-  });
-
-  updatedConversation.participants.forEach((participant) => {
-    const participantId = participant._id.toString();
-    if (participantId !== senderId.toString()) {
-      req.app.io.to(participantId).emit("conversation-update", {
-        conversationId: conversation._id,
-        lastMessage: populatedMessage.text,
-        unreadCount: updatedConversation.unreadCount[participantId] || 0,
-        timestamp: new Date(),
-      });
-    }
-  });
-
   res.status(201).json({
     message: "Success",
     theMessage: populatedMessage,
