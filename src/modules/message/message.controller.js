@@ -3,24 +3,6 @@ import { AppError, catchError } from "../../utils/handleErrors.js";
 import conversationModel from "../conversation/conversation.model.js";
 import userModel from "../user/user.model.js";
 import messageModel from "./message.model.js";
-import { createMessage } from "./message.service.js";
-
-const sendMessage = catchError(async (req, res) => {
-  const senderId = req.user._id;
-  const { receiverId, text } = req.body;
-
-  const { populatedMessage, updatedConversation } = await createMessage({
-    senderId,
-    receiverId,
-    text,
-  });
-
-  res.status(201).json({
-    message: "Success",
-    theMessage: populatedMessage,
-    conversation: updatedConversation,
-  });
-});
 
 const getConversation = catchError(async (req, res) => {
   const senderId = req.user._id;
@@ -55,4 +37,4 @@ const getConversation = catchError(async (req, res) => {
   res.status(200).json({ message: "sucess", messages });
 });
 
-export { sendMessage, getConversation };
+export { getConversation };
