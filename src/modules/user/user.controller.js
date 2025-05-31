@@ -336,6 +336,23 @@ const getUser = catchError(async (req, res) => {
   res.status(200).json({ message: "success", user });
 });
 
+const searchByUserName = catchError(async (req, res) => {
+  const currentUserId = req.user._id;
+  const userName = req.params.userName;
+  const regex = new RegExp("^" + userName, "i");
+
+  if (!userName) throw new AppError("there is no userNAme", 400);
+  const users = await userModel
+    .find({ username: { $regex: regex }, _id: { $ne: currentUserId } })
+    .select("username name isOnline lastSeen")
+    .lean();
+
+  if (!users || users.length === 0)
+    return res.status(200).json({ message: "No user found", users: [] });
+
+  return res.status(200).json({ message: "user found", users });
+});
+
 //block and unblock
 //1.block removes from friends if friends and from friendsrequests
 
@@ -400,4 +417,5 @@ export {
   changePassword,
   getAllUsers,
   getUser,
+  searchByUserName,
 };

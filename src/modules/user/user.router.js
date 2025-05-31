@@ -7,6 +7,7 @@ import {
   getAllUsers,
   getUser,
   resetPassword,
+  searchByUserName,
   sendFriendRequest,
   signIn,
   signUp,
@@ -32,4 +33,5 @@ userRouter.post("/resetPassword", resetPassword);
 userRouter.patch("/changePassword", auth, changePassword);
 userRouter.get("/getAllusers", auth, getAllUsers);
 userRouter.get("/getuser/:id", getUser);
+userRouter.get("/search/:userName", auth, searchByUserName);
 export default userRouter;
