@@ -32,7 +32,6 @@ export function registerSocketHandlers(io) {
       let disconnectedUserId = null;
       for (let [userId, sId] of onlineUsers.entries()) {
         if (sId === socket.id) {
-          // eslint-disable-next-line no-unused-vars
           disconnectedUserId = userId;
           break;
         }
