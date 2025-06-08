@@ -32,7 +32,7 @@ const getConversation = catchError(async (req, res) => {
     .find({ conversation: conversation._id })
     .populate("sender", "username")
     .sort("createdAt")
-    .select("text createdAt sender");
+    .select("text createdAt sender status");
 
   res.status(200).json({ message: "sucess", messages });
 });

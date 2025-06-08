@@ -36,6 +36,8 @@ export const createMessage = async ({ senderId, receiverId, text }) => {
     conversation: conversation._id,
     sender: senderId,
     text,
+    status: "sent",
+    receiver: receiverId,
   });
 
   const updatedConversation = await conversationModel

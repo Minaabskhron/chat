@@ -25,7 +25,7 @@ export function registerSocketHandlers(io) {
     socket.on("stop-typing", ({ senderId, receiverId }) => {
       socket.to(receiverId).emit("stop-typing", { senderId });
     });
-    messageSocket(io, socket);
+    messageSocket(io, socket, onlineUsers);
 
     socket.on("disconnect", async () => {
       console.log(`User disconnected: ${socket.id}`);

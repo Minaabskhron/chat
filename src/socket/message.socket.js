@@ -1,6 +1,7 @@
+import messageModel from "../modules/message/message.model.js";
 import { createMessage } from "../modules/message/message.service.js";
 
-export default function messageSocket(io, socket) {
+export default function messageSocket(io, socket, onlineUsers) {
   socket.on("send-message", async ({ senderId, receiverId, text }) => {
     try {
       const { populatedMessage } = await createMessage({
@@ -8,19 +9,40 @@ export default function messageSocket(io, socket) {
         receiverId,
         text,
       });
-      // Emit to sender and receiver rooms (you’ll need to have them join)
-      // 1) Send the new message back to the sender’s own room:
 
-      io.to(senderId).emit("new-message", {
-        populatedMessage,
-      });
-      // 2) Send the new message to the receiver’s room:
+      const finalStatus = onlineUsers.has(receiverId) ? "delivered" : "sent";
 
-      io.to(receiverId).emit("new-message", {
-        populatedMessage,
-      });
+      const updatedMessage = await messageModel
+        .findByIdAndUpdate(
+          populatedMessage._id,
+          { status: finalStatus },
+          { new: true }
+        )
+        .populate("sender", "username _id");
+
+      // Immediate emission
+      io.to(receiverId).emit("new-message", { message: updatedMessage });
+
+      // Delayed emission for sender to ensure status update
+      if (onlineUsers.has(receiverId)) {
+        setTimeout(() => {
+          io.to(senderId).emit("new-message", { message: updatedMessage });
+        }, 100);
+      } else {
+        io.to(senderId).emit("new-message", { message: updatedMessage });
+      }
     } catch (err) {
       socket.emit("message-error", err.message);
+    }
+  });
+
+  socket.on("check-delivery", async ({ messageId, receiverId }) => {
+    if (onlineUsers.has(receiverId)) {
+      const message = await messageModel
+        .findByIdAndUpdate(messageId, { status: "delivered" }, { new: true })
+        .populate("sender", "username _id");
+
+      io.to(message.sender._id.toString()).emit("new-message", { message });
     }
   });
 }

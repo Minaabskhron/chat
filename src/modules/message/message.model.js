@@ -16,6 +16,13 @@ const schema = new Schema(
       required: [true, "Sender is required"],
       index: true,
     },
+    receiver: {
+      type: Types.ObjectId,
+      ref: "User",
+      required: [true, "receiver is required"],
+      index: true,
+    },
+
     text: {
       type: String,
       required: [true, "Message content is required"],
@@ -32,6 +39,11 @@ const schema = new Schema(
     edited: {
       type: Boolean,
       default: false,
+    },
+    status: {
+      type: String,
+      enum: ["sent", "delivered", "seen"],
+      default: "sent",
     },
     deleted: {
       type: Boolean,
