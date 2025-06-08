@@ -6,10 +6,9 @@ const getAllConversations = catchError(async (req, res) => {
   const conversations = await conversationModel
     .find({ $or: [{ participants: senderId }] })
     .populate({ path: "participants", select: "username name" })
-    .populate({ path: "lastMessage", select: "text createdAt" })
     .populate({
       path: "lastMessage",
-      select: "text createdAt sender",
+      select: "text createdAt sender status",
       populate: { path: "sender", select: "username" },
     })
     .sort({ lastMessageTime: -1 });

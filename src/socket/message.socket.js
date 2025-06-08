@@ -24,13 +24,8 @@ export default function messageSocket(io, socket, onlineUsers) {
       io.to(receiverId).emit("new-message", { message: updatedMessage });
 
       // Delayed emission for sender to ensure status update
-      if (onlineUsers.has(receiverId)) {
-        setTimeout(() => {
-          io.to(senderId).emit("new-message", { message: updatedMessage });
-        }, 100);
-      } else {
-        io.to(senderId).emit("new-message", { message: updatedMessage });
-      }
+
+      io.to(senderId).emit("new-message", { message: updatedMessage });
     } catch (err) {
       socket.emit("message-error", err.message);
     }
