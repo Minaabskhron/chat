@@ -52,6 +52,9 @@ export const createMessage = async ({ senderId, receiverId, text }) => {
         $inc: {
           [`unreadCount.${receiverId}`]: 1,
         },
+        $push: {
+          [`unreadMessages.${receiverId}`]: message._id,
+        },
       },
       { new: true }
     )

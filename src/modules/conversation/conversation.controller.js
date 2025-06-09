@@ -29,14 +29,22 @@ const getAllConversations = catchError(async (req, res) => {
     const receiver = receiverParticipant || convo.participants[0]; // Fallback to first participant
 
     // 3. Create enhanced conversation object with receiver info
+
+    const raw = convo.toObject();
+    // grab the unread‐message IDs for this user (senderId)
+    const unreadArr = raw.unreadMessages?.[senderId.toString()] || [];
+
     return {
-      ...convo.toObject(), // Convert Mongoose document to plain object
+      ...raw,
       receiver: {
         // Add receiver field with simplified data
         _id: receiver._id, // Receiver's database ID
         username: receiver.username, // Receiver's display name
         name: receiver.name, // Receiver's display name
       },
+      senderId,
+      unreadMessages: unreadArr,
+      unreadCount: unreadArr.length,
     };
   });
 

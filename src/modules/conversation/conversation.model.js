@@ -35,6 +35,11 @@ const schema = new Schema(
       of: Number,
       default: () => ({}),
     },
+    unreadMessages: {
+      type: Map,
+      of: [Types.ObjectId],
+      default: () => ({}),
+    },
   },
   {
     // Schema options

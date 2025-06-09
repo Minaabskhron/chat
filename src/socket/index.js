@@ -25,6 +25,16 @@ export function registerSocketHandlers(io) {
     socket.on("stop-typing", ({ senderId, receiverId }) => {
       socket.to(receiverId).emit("stop-typing", { senderId });
     });
+
+    // NEW: let a client join a specific conversation room
+    socket.on("join-conversation", ({ conversationId }) => {
+      socket.join(`conversation_${conversationId}`);
+    });
+
+    socket.on("leave-conversation", ({ conversationId }) => {
+      socket.leave(`conversation_${conversationId}`);
+    });
+
     messageSocket(io, socket, onlineUsers);
 
     socket.on("disconnect", async () => {
